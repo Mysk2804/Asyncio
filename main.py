@@ -43,18 +43,21 @@ async def get_items(json_data, client, name):
 
 async def get_people(people_id: int, client: ClientSession):
     url = f'https://swapi.dev/api/people/{people_id}/'
-    async with client.get(url) as response:
-        json_data = await response.json()
-        json_data['id'] = people_id
-        json_data_world = await client.get(json_data['homeworld'])
-        json_data_world = await json_data_world.json()
-        json_data['homeworld'] = json_data_world['name']
-        json_data['vehicles'] = await get_items(json_data=json_data['vehicles'], client=client, name='name')
-        json_data['species'] = await get_items(json_data=json_data['species'], client=client, name='name')
-        json_data['films'] = await get_items(json_data=json_data['films'], client=client, name='title')
-        json_data['starships'] = await get_items(json_data=json_data['starships'], client=client, name='name')
-        pprint(json_data)
-    return json_data
+    try:
+        async with client.get(url) as response:
+            json_data = await response.json()
+            json_data['id'] = people_id
+            json_data_world = await client.get(json_data['homeworld'])
+            json_data_world = await json_data_world.json()
+            json_data['homeworld'] = json_data_world['name']
+            json_data['vehicles'] = await get_items(json_data=json_data['vehicles'], client=client, name='name')
+            json_data['species'] = await get_items(json_data=json_data['species'], client=client, name='name')
+            json_data['films'] = await get_items(json_data=json_data['films'], client=client, name='title')
+            json_data['starships'] = await get_items(json_data=json_data['starships'], client=client, name='name')
+            # pprint(json_data)
+        return json_data
+    except Exception:
+        print('KeyError')
 
 
 async def main():
@@ -65,7 +68,7 @@ async def main():
             await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)
 
-        for id_chunk in chunked(range(1, 10), MAX_SIZE):
+        for id_chunk in chunked(range(1, 100), MAX_SIZE):
             coros = [get_people(people_id=people_id, client=session) for people_id in id_chunk]
             people_list = await asyncio.gather(*coros)
             db_coro = paste_to_bd(people_list)
